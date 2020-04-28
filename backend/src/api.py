@@ -55,42 +55,53 @@ def get_drinks_detail(payload):
 @app.route("/drinks", methods=["POST"])
 @requires_auth('post:drinks')
 def create_drink(payload):
-    # add post:drinks permission
+
     body = request.get_json()
 
-    try:
-        title = body.get("title", None)
-        recipe = body.get("recipe", None)
-
-        new_drink = Drink(
-            title=title,
-            recipe=json.dumps(recipe)
-        )
-        new_drink.insert()
-
-        return jsonify({
-            "success": True,
-            "drinks": new_drink
-        })
-    except Exception as error:
+    if 'title' and 'recipe' not in body:
         abort(422)
+
+    title = body['title']
+    recipe_json = json.dumps(body['recipe'])
+
+    drink = Drink(title=title, recipe=recipe_json)
+
+    drink.insert()
+
+    return jsonify({
+        'success': True,
+        'drinks': [drink.long()]
+    })
 
 
 @app.route("/drinks/<int:drink_id>", methods=["PATCH"])
 @requires_auth('patch:drinks')
-def update_drink(drink_id):
+def update_drink(payload, drink_id):
+    body = request.get_json()
+
     try:
-        drink = Drink.query.filter(Drink.id == id).one_or_none()
+        drink = Drink.query.get(drink_id)
 
-        if (drink is None):
+        if drink is None:
             abort(404)
-        body = request.get_json()
-        title = body.get("title", None)
-        recipe = body.get("recipe", None)
 
-        drink.title = title
-        drink.recipe = json.dumps(recipe)
-        drink.update()
+        elif body is None:
+            abort(404)
+
+        else:
+            if "title" in body:
+                drink.title = body["title"]
+
+            if "recipe" in body:
+                drink.recipe = json.dumps(body["recipe"])
+
+            drink.update()
+
+            updated_drink = Drink.query.get(drink_id)
+        return jsonify({
+            "success": True,
+            "drinks": [updated_drink.long()]
+        })
 
     except Exception as error:
         abort(422)
@@ -136,8 +147,11 @@ def not_found(error):
 
 @app.errorhandler(AuthError)
 def not_found(error):
-    return jsonify({
-        "success": False,
-        "error": error,
-        "message": error["code"]
-    }), AuthError
+    response = jsonify(error.error)
+    response.status_code = error.status_code
+    return response
+    # return jsonify({
+    #     "success": False,
+    #     "error": error,
+    #     "message": error.error["code"]
+    # }), AuthError
