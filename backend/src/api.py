@@ -38,9 +38,8 @@ def get_drinks():
 
 
 @app.route("/drinks-detail")
-@cross_origin()
 @requires_auth('get:drinks-detail')
-def get_drinks_detail():
+def get_drinks_detail(payload):
     drinks = [drink.long() for drink in Drink.query.all()]
 
     if drinks is None:
@@ -55,8 +54,7 @@ def get_drinks_detail():
 
 @app.route("/drinks", methods=["POST"])
 @requires_auth('post:drinks')
-@cross_origin()
-def create_drink():
+def create_drink(payload):
     # add post:drinks permission
     body = request.get_json()
 
@@ -80,7 +78,6 @@ def create_drink():
 
 @app.route("/drinks/<int:drink_id>", methods=["PATCH"])
 @requires_auth('patch:drinks')
-@cross_origin()
 def update_drink(drink_id):
     try:
         drink = Drink.query.filter(Drink.id == id).one_or_none()
@@ -101,8 +98,7 @@ def update_drink(drink_id):
 
 @app.route("/drinks/<int:drink_id>", methods=["DELETE"])
 @requires_auth('delete:drinks')
-@cross_origin()
-def delete_drink(drink_id):
+def delete_drink(payload, drink_id):
     try:
         drink = Drink.query.get(drink_id)
         if (drink is None):
@@ -143,5 +139,5 @@ def not_found(error):
     return jsonify({
         "success": False,
         "error": error,
-        "message": error
+        "message": error["code"]
     }), AuthError

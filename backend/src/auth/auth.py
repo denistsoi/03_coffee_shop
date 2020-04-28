@@ -5,7 +5,7 @@ from jose import jwt
 from urllib.request import urlopen
 
 
-AUTH0_DOMAIN = 'https://dev-98w9-5eh.auth0.com/api/v2/'
+AUTH0_DOMAIN = 'dev-98w9-5eh.auth0.com'
 ALGORITHMS = ['RS256']
 API_AUDIENCE = 'coffee-shop'
 
@@ -56,6 +56,7 @@ def get_token_auth_header():
 
 
 def check_permissions(permission, payload):
+    print(permission, payload)
     if 'permissions' not in payload:
         raise AuthError({
             'code': 'invalid_claims',
@@ -66,7 +67,7 @@ def check_permissions(permission, payload):
         raise AuthError({
             'code': 'unauthorized',
             'description': 'Permission not found.'
-        }, 401)
+        }, 403)
     return True
 
 
@@ -134,14 +135,8 @@ def requires_auth(permission=''):
         @wraps(f)
         def wrapper(*args, **kwargs):
             token = get_token_auth_header()
-            try:
-                payload = verify_decode_jwt(token)
-            except Exception as error:
-                abort(401)
-            try:
-                check_permissions(permission, payload)
-            except Exception as error:
-                abort(401)
+            payload = verify_decode_jwt(token)
+            check_permissions(permission, payload)
             return f(payload, *args, **kwargs)
 
         return wrapper
